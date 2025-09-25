@@ -1,0 +1,35 @@
+Case 1: Exact skill and level match (both directions)
+
+UserA wants to learn "React" at "Intermediate", UserB can teach "React" at "Intermediate".
+UserA can teach "Python" at "Easy", UserB wants to learn "Python" at "Easy".
+Result: Match found.
+
+
+Case 2: Skill matches but level does not
+
+UserA wants to learn "React" at "Intermediate", UserB can teach "React" at "Advanced".
+Result: No match.
+
+
+Case 3: Only one direction matches (skill and level)
+
+UserA wants to learn "React" at "Intermediate", UserB can teach "React" at "Intermediate".
+UserA cannot teach anything UserB wants to learn.
+Result: Loose match found.
+
+
+Case 4: No skill or level overlap
+
+UserA and UserB have no matching skills or levels.
+Result: No match.
+
+Case 5: Multiple candidates
+
+UserA matches with UserB and UserC (same skill and level).
+Result: UserB (first in database) is matched.
+
+
+Case 6: Existing match
+
+UserA and UserB already have a match/roomId.
+Result: Existing match is returned.
