@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎯 SkillSwap – Learn. Teach. Connect. Grow.
 
-## Getting Started
+SkillSwap is a smart, community-driven platform where users match with others based on **skills they want to learn** and **skills they can teach**.  
+Whether you're a beginner or expert — SkillSwap creates meaningful learning exchanges through **collaboration, communication & real-time matching**.
 
-First, run the development server:
+🚀 Live Demo:  
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+https://skill-swap-eight-theta.vercel.app/
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🌟 Why SkillSwap?
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+✅ Bridges the learning gap by pairing users with the perfect match  
+✅ Encourages growth through collaboration  
+✅ Simple, friendly, and engaging experience  
+✅ Eliminates dependency on paid courses — learn by teaching others  
 
-## Learn More
+> “Everyone has something to teach. Everyone has something to learn.”  
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ✨ Key Features:
 
-## Deploy on Vercel
+1. User Authentication - Secure account creation & login via Clerk 
+2. Skill Matching Engine - Smart pairing based on Learn vs Teach skills 
+3. Skill Profiles -  Showcase skills, learning goals & experience 
+4. Real-time Meeting Page - Users can connect instantly for collaboration 
+5. Fully Responsive UI - Seamless experience across all devices 
+6. Playful Gamified Experience - Interactive UI and glowing effects add fun 
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 🧩 Tech Stack:
+
+1. **Frontend** - Next.js 14, React, Tailwind CSS 
+2.  **Backend** - Convex (Database + Realtime Functions) 
+3. **Auth** - Clerk 
+4. **Deployment** - Vercel 
+5. **Other** - TypeScript, Git & GitHub 
+
+
+## Screenshots:
+
+<img width="1919" height="916" alt="Screenshot 2025-10-28 183143" src="https://github.com/user-attachments/assets/50c446bf-591c-4728-b054-c81525522c2c" />
+<img width="1902" height="902" alt="Screenshot 2025-10-28 183125" src="https://github.com/user-attachments/assets/72d3f34f-aa89-405f-a095-e8ee472719a4" />
+<img width="1898" height="733" alt="Screenshot 2025-10-28 183037" src="https://github.com/user-attachments/assets/ea0fdbe4-4787-4573-801b-9dabce4b0641" />
+
