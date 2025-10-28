@@ -41,7 +41,8 @@ https://skill-swap-eight-theta.vercel.app/
 
 ## Screenshots:
 
+<img width="1898" height="733" alt="Screenshot 2025-10-28 183037" src="https://github.com/user-attachments/assets/ea0fdbe4-4787-4573-801b-9dabce4b0641" />
 <img width="1919" height="916" alt="Screenshot 2025-10-28 183143" src="https://github.com/user-attachments/assets/50c446bf-591c-4728-b054-c81525522c2c" />
 <img width="1902" height="902" alt="Screenshot 2025-10-28 183125" src="https://github.com/user-attachments/assets/72d3f34f-aa89-405f-a095-e8ee472719a4" />
-<img width="1898" height="733" alt="Screenshot 2025-10-28 183037" src="https://github.com/user-attachments/assets/ea0fdbe4-4787-4573-801b-9dabce4b0641" />
+
 
