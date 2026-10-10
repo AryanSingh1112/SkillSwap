@@ -5,7 +5,7 @@ Whether you're a beginner or expert — SkillSwap creates meaningful learning ex
 
 🚀 Live Demo:  
 
-https://skill-swap-eight-theta.vercel.app/
+https://skill-swap-one-kappa.vercel.app/
 
 
 ## 🌟 Why SkillSwap?
