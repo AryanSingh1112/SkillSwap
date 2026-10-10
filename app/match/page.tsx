@@ -26,7 +26,8 @@ function CenterStatus({ status }: { status: "waiting" | "matched" }) {
   }
   return (
     <div className="relative flex flex-col items-center my-6 sm:my-0">
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-green-400 drop-shadow-lg animate-fadeIn text-center">
+      {/* !bg-none !text-white overrides the global h1 gradient from globals.css */}
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold !bg-none !text-white drop-shadow-lg animate-fadeIn text-center">
         Match Found
       </h1>
     </div>

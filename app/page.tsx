@@ -32,10 +32,10 @@ export default function Home() {
 
         {/* Hero Section */}
         <section className="flex flex-col items-center justify-center text-center py-32 px-6">
-          <h1 className=" font-extrabold text-white drop-shadow-xl leading-tight">
+          <h1 className="!bg-none !text-white font-extrabold drop-shadow-xl leading-tight">
             Match Skills, Meet People, <br /> and Learn Together
           </h1>
-          <p className="mt-6 text-lg md:text-2xl text-gray-200 max-w-2xl">
+          <p className="mt-6 text-lg md:text-2xl text-white max-w-2xl">
             Grow your expertise through connections.
           </p>
 
@@ -55,12 +55,12 @@ export default function Home() {
         {/* Unified Section for Image Cards */}
         {datas.length > 0 && (
           <section className="py-16 bg-black/70 text-center text-white">
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 drop-shadow-lg">
-              Explore Skills & Make Connections
-            </h2>
-            <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto mb-12">
-              Discover new skills, meet experts, and join interactive sessions to grow together.
-            </p>
+            <h2 className="!text-white text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg">
+  Explore Skills & Make Connections
+</h2>
+<p className="text-white text-sm md:text-lg max-w-2xl mx-auto mb-12">
+  Discover new skills, meet experts, and join interactive sessions to grow together.
+</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto px-6">
               {datas.map((data) => (

@@ -1,43 +1,47 @@
-import { Images } from '@/constants'
-import Link from 'next/link'
-import React from 'react'
+import { Images } from "@/constants";
+import Link from "next/link";
+import React from "react";
 import Image from "next/image";
 
 const ImageCard = ({ data }: { data: Images }) => {
-  const { id, imageName, imagePath, data: innerData } = data
+  const { id, imageName, imagePath, data: innerData } = data;
 
   return (
     <Link
       href={`/data/${id}`}
-      className="block w-full max-w-md mx-auto p-4 rounded-2xl shadow-lg bg-[#1e293b] hover:shadow-xl transition-all duration-300"
+      className="group flex h-full w-full flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/80 p-5 shadow-xl backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
     >
       {/* Header */}
-      <div className="flex flex-col gap-2 mb-3">
-        <h2 className="font-bold text-lg md:text-xl break-words text-white">
+      <div className="flex flex-col gap-3">
+        {/* !text-white overrides the global h2 color */}
+        <h2 className="!text-white text-xl font-bold tracking-tight break-words md:text-2xl">
           {imageName}
         </h2>
+
         <div className="flex flex-wrap gap-2">
-          <span className="text-sm md:text-base font-semibold px-3 py-1 rounded-full bg-green-600/80 text-white shadow-sm">
+          <span className="rounded-full bg-emerald-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm">
             Teach: <span className="font-normal">{innerData.teach}</span>
           </span>
-          <span className="text-sm md:text-base font-semibold px-3 py-1 rounded-full bg-blue-600/80 text-white shadow-sm">
+          <span className="rounded-full bg-blue-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm">
             Learn: <span className="font-normal">{innerData.skill}</span>
           </span>
         </div>
       </div>
 
       {/* Image / Video */}
-      <div className="w-full overflow-hidden rounded-xl bg-gray-900">
-        <Image
-          src={imagePath}
-          alt="resume"
-          width={400}
-          height={300}
-          className="w-full h-auto object-contain rounded-xl transition-transform duration-300 hover:scale-105"
-        />
-      </div>
+      {/* Image / Video */}
+<div className="mt-auto w-full overflow-hidden rounded-2xl bg-gray-900">
+  <Image
+    src={imagePath}
+    alt={imageName}
+    width={400}
+    height={300}
+    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+    className="h-auto w-full transition-transform duration-500 group-hover:scale-105"
+  />
+</div>
     </Link>
-  )
-}
+  );
+};
 
-export default ImageCard
+export default ImageCard;

@@ -109,7 +109,7 @@ const SkillsPage = () => {
   };
 
   return (
-    <main className="min-h-screen py-12 px-4 bg-gradient-to-br from-indigo-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+    <main className="min-h-screen py-12 px-4 bg-gradient-to-br from-indigo-100 via-violet-50 to-sky-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
       <div className="max-w-7xl mx-auto flex flex-col gap-10">
         {/* Header */}
         <div className="flex flex-col items-center gap-2">
@@ -124,9 +124,9 @@ const SkillsPage = () => {
         {/* Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-22">
           {/* Learn Column */}
-          <div className="flex flex-col gap-6 bg-white/80 dark:bg-gray-900/80 rounded-2xl p-6 shadow-lg">
+          <div className="flex flex-col gap-6 bg-indigo-50/70 dark:bg-gray-900/80 rounded-2xl p-6 shadow-lg">
             <h2 className="text-2xl font-bold text-indigo-600 mb-2">What do you want to learn?</h2>
-            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-full shadow">
+            <div className="flex items-center gap-2 bg-indigo-50 dark:bg-gray-800 px-4 py-2 rounded-full shadow">
               <Search className="text-gray-400" />
               <input
                 type="text"
@@ -145,7 +145,7 @@ const SkillsPage = () => {
                     onClick={() => toggleLearn(skill.id)}
                     className={`group cursor-pointer border-2 transition-all duration-300 rounded-2xl shadow-xl hover:scale-105 hover:shadow-2xl ${selected
                         ? "border-indigo-500 ring-2 ring-indigo-300 bg-gradient-to-br from-indigo-100/80 to-fuchsia-100/80 dark:from-indigo-900/60 dark:to-fuchsia-900/60"
-                        : "border-gray-200"
+                        : "border-indigo-300 bg-violet-50 dark:border-indigo-500/40 dark:bg-gray-800"
                       }`}
                   >
                     <CardContent className="flex flex-col items-center justify-center gap-4 p-7">
@@ -203,9 +203,9 @@ const SkillsPage = () => {
           </div>
 
           {/* Teach Column */}
-          <div className="flex flex-col gap-6 bg-white/80 dark:bg-gray-900/80 rounded-2xl p-6 shadow-lg">
+          <div className="flex flex-col gap-6 bg-indigo-50/70 dark:bg-gray-900/80 rounded-2xl p-6 shadow-lg">
             <h2 className="text-2xl font-bold text-fuchsia-600 mb-2">What can you teach?</h2>
-            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-full shadow">
+            <div className="flex items-center gap-2 bg-indigo-50 dark:bg-gray-800 px-4 py-2 rounded-full shadow">
               <Search className="text-gray-400" />
               <input
                 type="text"
@@ -224,7 +224,7 @@ const SkillsPage = () => {
                     onClick={() => toggleTeach(skill.id)}
                     className={`group cursor-pointer border-2 transition-all duration-300 rounded-2xl shadow-xl hover:scale-105 hover:shadow-2xl ${selected
                         ? "border-fuchsia-500 ring-2 ring-fuchsia-300 bg-gradient-to-br from-fuchsia-100/80 to-indigo-100/80 dark:from-fuchsia-900/60 dark:to-indigo-900/60"
-                        : "border-gray-200"
+                        : "border-fuchsia-300 bg-violet-50 dark:border-fuchsia-500/40 dark:bg-gray-800"
                       }`}
                   >
                     <CardContent className="flex flex-col items-center justify-center gap-4 p-7">
@@ -360,7 +360,7 @@ const SkillsPage = () => {
 
       {/* Beautiful AlertDialog */}
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent className="rounded-3xl shadow-2xl border-0 bg-gradient-to-br from-indigo-100 via-white to-fuchsia-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 p-8 max-w-md mx-auto animate-fade-in">
+        <AlertDialogContent className="rounded-3xl shadow-2xl border-0 bg-gradient-to-br from-indigo-100 via-violet-50 to-fuchsia-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 p-8 max-w-md mx-auto animate-fade-in">
           <AlertDialogHeader className="flex flex-col items-center gap-2">
             {/* Icon for visual appeal */}
             <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-fuchsia-400 text-white shadow-lg mb-2">

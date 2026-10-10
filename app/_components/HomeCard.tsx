@@ -24,8 +24,11 @@ const HomeCard = ({ className, img, title, description, handleClick }: HomeCardP
       </div>
 
       <div className="flex flex-col gap-2">
-    <h1 className="text-xl font-bold text-white">{title}</h1>
-    <p className="text-base font-normal text-white">{description}</p>
+        {/* !classes override the global h1 gradient, color and size from globals.css */}
+        <h1 className="!bg-none !text-xl !font-bold !leading-tight !tracking-normal !text-white">
+          {title}
+        </h1>
+        <p className="text-base font-normal text-white">{description}</p>
       </div>
     </div>
   );

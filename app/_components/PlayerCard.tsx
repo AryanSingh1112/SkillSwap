@@ -38,11 +38,8 @@ export function PlayerCard({
 
         {/* Info */}
         <div className="text-center mt-6">
-          <h2
-            className={`text-3xl sm:text-4xl font-extrabold uppercase ${
-              isSelf ? "text-red-400" : "text-blue-400"
-            }`}
-          >
+          {/* !text-yellow-400 overrides the global h2 color from globals.css */}
+          <h2 className="text-3xl sm:text-4xl font-extrabold uppercase !text-yellow-400">
             {isWaiting ? "Waiting..." : name}
           </h2>
           <p className="text-xl mt-3 text-gray-300">
