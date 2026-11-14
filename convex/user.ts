@@ -1,11 +1,14 @@
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+
 export const removeSkill = mutation({
   args: {
     email: v.string(),
     skill: v.string(),
-    type: v.string(), // 'learn' or 'teach'
+    type: v.union(v.literal("learn"), v.literal("teach")),
   },
   handler: async (ctx, args) => {
-    let user = await ctx.db
+    const user = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("email"), args.email))
       .first();
@@ -14,25 +17,60 @@ export const removeSkill = mutation({
       throw new Error("User not found");
     }
 
-    let updatedLearn = user.learn || [];
-    let updatedTeach = user.teach || [];
-
-    if (args.type === "learn") {
-      updatedLearn = updatedLearn.filter((s) => s !== args.skill);
-    } else if (args.type === "teach") {
-      updatedTeach = updatedTeach.filter((s) => s !== args.skill);
-    }
+    const updatedLearn =
+      args.type === "learn"
+        ? (user.learn ?? []).filter((skill) => skill !== args.skill)
+        : user.learn ?? [];
+    const updatedTeach =
+      args.type === "teach"
+        ? (user.teach ?? []).filter((skill) => skill !== args.skill)
+        : user.teach ?? [];
+    const updatedLearnLevels = (user.learnLevels ?? []).filter(
+      ({ skill }) => skill !== args.skill || args.type !== "learn",
+    );
+    const updatedTeachLevels = (user.teachLevels ?? []).filter(
+      ({ skill }) => skill !== args.skill || args.type !== "teach",
+    );
 
     await ctx.db.patch(user._id, {
       learn: updatedLearn,
       teach: updatedTeach,
+      learnLevels: updatedLearnLevels,
+      teachLevels: updatedTeachLevels,
     });
+
+    const skillDocuments = await ctx.db
+      .query("skills")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .collect();
+
+    if (updatedLearn.length === 0 && updatedTeach.length === 0) {
+      await Promise.all(skillDocuments.map((document) => ctx.db.delete(document._id)));
+    } else {
+      const combinedSkill = {
+        email: args.email,
+        learnSkill: updatedLearn.join(", "),
+        learnLevel: updatedLearn
+          .map((skill) => updatedLearnLevels.find((entry) => entry.skill === skill)?.level ?? "")
+          .join(", "),
+        teachSkill: updatedTeach.join(", "),
+        teachLevel: updatedTeach
+          .map((skill) => updatedTeachLevels.find((entry) => entry.skill === skill)?.level ?? "")
+          .join(", "),
+      };
+
+      const [existingSkill, ...duplicates] = skillDocuments;
+      if (existingSkill) {
+        await ctx.db.replace(existingSkill._id, combinedSkill);
+        await Promise.all(duplicates.map((document) => ctx.db.delete(document._id)));
+      } else {
+        await ctx.db.insert("skills", combinedSkill);
+      }
+    }
 
     return "Skill removed successfully";
   },
 });
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 
 // Create a user
 export const createUser = mutation({
@@ -73,15 +111,20 @@ export const updateSkills = mutation({
     imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let user = await ctx.db
+    const email = args.email.trim();
+    if (!email) {
+      throw new Error("A signed-in user email is required to save skills.");
+    }
+
+    const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
-    // If user does not exist, create them with all info
+    let userId;
     if (!user) {
-      await ctx.db.insert("users", {
-        email: args.email,
+      userId = await ctx.db.insert("users", {
+        email,
         userName: args.userName || "",
         imageUrl: args.imageUrl || "",
         learn: args.learn || [],
@@ -89,40 +132,89 @@ export const updateSkills = mutation({
         learnLevels: args.learnLevels || [],
         teachLevels: args.teachLevels || [],
       });
-      return "User created and skills set";
+    } else {
+      const updatedLearn = Array.from(
+        new Set([...(user.learn || []), ...(args.learn || [])])
+      );
+      const updatedTeach = Array.from(
+        new Set([...(user.teach || []), ...(args.teach || [])])
+      );
+
+      function mergeLevels(
+        existing: { skill: string; level: string }[] = [],
+        incoming: { skill: string; level: string }[] = [],
+      ) {
+        const map = new Map<string, string>();
+        existing.forEach(({ skill, level }) => map.set(skill, level));
+        incoming.forEach(({ skill, level }) => map.set(skill, level));
+        return Array.from(map.entries()).map(([skill, level]) => ({ skill, level }));
+      }
+      const updatedLearnLevels = mergeLevels(user.learnLevels, args.learnLevels ?? []);
+      const updatedTeachLevels = mergeLevels(user.teachLevels, args.teachLevels ?? []);
+
+      const patchData = {
+        learn: updatedLearn,
+        teach: updatedTeach,
+        learnLevels: updatedLearnLevels,
+        teachLevels: updatedTeachLevels,
+        ...(args.userName !== undefined ? { userName: args.userName } : {}),
+        ...(args.imageUrl !== undefined ? { imageUrl: args.imageUrl } : {}),
+      };
+
+      await ctx.db.patch(user._id, patchData);
+      userId = user._id;
     }
 
-    // Append skills while avoiding duplicates
-    const updatedLearn = Array.from(
-      new Set([...(user.learn || []), ...(args.learn || [])])
-    );
-    const updatedTeach = Array.from(
-      new Set([...(user.teach || []), ...(args.teach || [])])
-    );
-
-    // Merge levels for each skill, updating or adding
-    function mergeLevels(existing: any[] = [], incoming: any[] = []) {
-      const map = new Map();
-      existing.forEach(({ skill, level }) => map.set(skill, level));
-      incoming.forEach(({ skill, level }) => map.set(skill, level));
-      return Array.from(map.entries()).map(([skill, level]) => ({ skill, level }));
+    const savedUser = await ctx.db.get(userId);
+    if (!savedUser) {
+      throw new Error("The user profile could not be verified after saving.");
     }
-    const updatedLearnLevels = mergeLevels(user.learnLevels, args.learnLevels ?? []);
-    const updatedTeachLevels = mergeLevels(user.teachLevels, args.teachLevels ?? []);
+    const levelsForSkills = (
+      skills: string[],
+      levels: { skill: string; level: string }[],
+    ) =>
+      skills
+        .map((skill) => levels.find((entry) => entry.skill === skill)?.level ?? "")
+        .join(", ");
 
-    // Always overwrite userName and imageUrl, even if blank
-    const patchData: any = {
-      learn: updatedLearn,
-      teach: updatedTeach,
-      learnLevels: updatedLearnLevels,
-      teachLevels: updatedTeachLevels,
-      userName: args.userName ?? "",
-      imageUrl: args.imageUrl ?? "",
+    const combinedSkill = {
+      email,
+      learnSkill: (savedUser.learn ?? []).join(", "),
+      learnLevel: levelsForSkills(savedUser.learn ?? [], savedUser.learnLevels ?? []),
+      teachSkill: (savedUser.teach ?? []).join(", "),
+      teachLevel: levelsForSkills(savedUser.teach ?? [], savedUser.teachLevels ?? []),
     };
 
-    await ctx.db.patch(user._id, patchData);
+    const existingSkills = await ctx.db
+      .query("skills")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .collect();
+    const [existingSkill, ...duplicateSkills] = existingSkills;
+    let skillId;
 
-    return "Skills and profile updated successfully";
+    if (existingSkill) {
+      await ctx.db.replace(existingSkill._id, combinedSkill);
+      skillId = existingSkill._id;
+      await Promise.all(
+        duplicateSkills.map((duplicate) => ctx.db.delete(duplicate._id)),
+      );
+    } else {
+      skillId = await ctx.db.insert("skills", combinedSkill);
+    }
+
+    const savedSkill = await ctx.db.get(skillId);
+    if (
+      !savedSkill ||
+      savedSkill.email !== email ||
+      savedSkill.learnSkill !== combinedSkill.learnSkill ||
+      savedSkill.learnLevel !== combinedSkill.learnLevel ||
+      savedSkill.teachSkill !== combinedSkill.teachSkill ||
+      savedSkill.teachLevel !== combinedSkill.teachLevel
+    ) {
+      throw new Error("The combined skills could not be verified after saving.");
+    }
+
+    return { user: savedUser, skill: savedSkill };
   },
 });
 

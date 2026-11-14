@@ -22,9 +22,14 @@ export default defineSchema({
     .index("by_userB", ["userB"]),
 
   skills: defineTable({
-    name: v.string(),
+    learnSkill: v.optional(v.string()),
+    learnLevel: v.optional(v.string()),
+    teachSkill: v.optional(v.string()),
+    teachLevel: v.optional(v.string()),
+    email: v.optional(v.string()),
     icon: v.optional(v.string()),
-    teachLevel: v.string(),
-    learnLevel: v.string(),
-  }),
+    name: v.optional(v.string()),
+    kind: v.optional(v.union(v.literal("teach"), v.literal("learn"))),
+    level: v.optional(v.string()),
+  }).index("by_email", ["email"]),
 });

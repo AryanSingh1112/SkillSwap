@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from 'next/navigation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +43,6 @@ const SkillsPage = () => {
   const [learnLevels, setLearnLevels] = useState<Record<number, string>>({});
   const [teachLevels, setTeachLevels] = useState<Record<number, string>>({});
   const levels = ["Easy", "Intermediate", "Advanced"];
-  const router = useRouter();
   const { user } = useUser();
   const updateSkills = useMutation(api.user.updateSkills);
   const removeSkill = useMutation(api.user.removeSkill);
@@ -376,16 +374,6 @@ const SkillsPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-center mt-6 space-x-4">
-            <AlertDialogAction
-              onClick={() => {
-                router.push('/match');
-                setAlertOpen(false);
-              }}
-              className="px-8 py-3 cursor-pointer rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white font-bold shadow-lg hover:from-indigo-600 hover:to-fuchsia-600 transition-all text-lg"
-            >
-              Find Your Match
-            </AlertDialogAction>
-
             <AlertDialogAction
               onClick={() => setAlertOpen(false)}
               className="px-8 py-3 cursor-pointer rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white font-bold shadow-lg hover:from-indigo-600 hover:to-fuchsia-600 transition-all text-lg"

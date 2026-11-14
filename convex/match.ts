@@ -1,117 +1,197 @@
-// ✅ Update meeting link for a match
-export const setMeetingLink = mutation({
-  args: { matchId: v.id("matches"), meetingLink: v.string() },
-  handler: async (ctx, args) => {
-    // meetingLink is not in schema, so do not patch it
-    // If you want to store meetingLink, add it to schema first
-    // await ctx.db.patch(args.matchId, { meetingLink: args.meetingLink });
-    // Previous behavior: do nothing or handle as needed
-  },
-});
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 
-// ✅ Find or create match
+type SkillLevel = { skill: string; level: string };
+type SkillMatch = {
+  skill: string;
+  yourLevel: string | null;
+  theirLevel: string | null;
+  exactLevel: boolean;
+};
+
+function normalize(value: string) {
+  return value.trim().toLocaleLowerCase();
+}
+
+function findSkillMatches(
+  yourSkills: string[],
+  yourLevels: SkillLevel[],
+  theirSkills: string[],
+  theirLevels: SkillLevel[],
+): SkillMatch[] {
+  const theirSkillsByName = new Map(
+    theirSkills.map((skill) => [normalize(skill), skill]),
+  );
+
+  return yourSkills.flatMap((skill) => {
+    const theirSkill = theirSkillsByName.get(normalize(skill));
+    if (!theirSkill) return [];
+
+    const yourLevel =
+      yourLevels.find((entry) => normalize(entry.skill) === normalize(skill))
+        ?.level ?? null;
+    const theirLevel =
+      theirLevels.find(
+        (entry) => normalize(entry.skill) === normalize(theirSkill),
+      )?.level ?? null;
+
+    return [{
+      skill,
+      yourLevel,
+      theirLevel,
+      exactLevel:
+        yourLevel !== null &&
+        theirLevel !== null &&
+        normalize(yourLevel) === normalize(theirLevel),
+    }];
+  });
+}
+
 export const findMatch = mutation({
-  args: { email: v.string() },
+  args: {
+    email: v.string(),
+    learnSkill: v.optional(v.string()),
+    teachSkill: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    // 1️⃣ Get current user
+    const email = args.email.trim().toLocaleLowerCase();
+    if (!email) return null;
+    const hasTargetSkills = Boolean(args.learnSkill?.trim() && args.teachSkill?.trim());
+    if (Boolean(args.learnSkill?.trim()) !== Boolean(args.teachSkill?.trim())) {
+      throw new Error("Both target skills are required for a focused match.");
+    }
+
     const currentUser = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email.trim()))
       .first();
     if (!currentUser) return null;
 
-  const learnLevels = currentUser.learnLevels || [];
-  const teachLevels = currentUser.teachLevels || [];
+    const selectedLearnSkill = hasTargetSkills
+      ? currentUser.learn?.find(
+          (skill) => normalize(skill) === normalize(args.learnSkill!),
+        )
+      : undefined;
+    const selectedTeachSkill = hasTargetSkills
+      ? currentUser.teach?.find(
+          (skill) => normalize(skill) === normalize(args.teachSkill!),
+        )
+      : undefined;
 
-    // 2️⃣ Fetch all other users
+    if (hasTargetSkills && (!selectedLearnSkill || !selectedTeachSkill)) {
+      return null;
+    }
+
+    const currentLearnSkills = hasTargetSkills
+      ? [selectedLearnSkill!]
+      : currentUser.learn ?? [];
+    const currentTeachSkills = hasTargetSkills
+      ? [selectedTeachSkill!]
+      : currentUser.teach ?? [];
+
     const candidates = await ctx.db
       .query("users")
-      .filter((q) => q.neq(q.field("email"), args.email))
       .collect();
+    const otherUsers = candidates.filter(
+      (candidate) =>
+        normalize(candidate.email) !== email &&
+        ((candidate.learn?.length ?? 0) > 0 ||
+          (candidate.teach?.length ?? 0) > 0),
+    );
 
-    // 3️⃣ Check for existing match
-    for (const u of candidates) {
-      const existingMatch = await ctx.db
+    const rankedCandidates = otherUsers
+      .map((candidate) => {
+        const youLearn = findSkillMatches(
+          currentLearnSkills,
+          currentUser.learnLevels ?? [],
+          candidate.teach ?? [],
+          candidate.teachLevels ?? [],
+        );
+        const youTeach = findSkillMatches(
+          currentTeachSkills,
+          currentUser.teachLevels ?? [],
+          candidate.learn ?? [],
+          candidate.learnLevels ?? [],
+        );
+        const exactLearn = youLearn.filter((match) => match.exactLevel).length;
+        const exactTeach = youTeach.filter((match) => match.exactLevel).length;
+        const mutualExact = exactLearn > 0 && exactTeach > 0;
+        const mutualSkills = youLearn.length > 0 && youTeach.length > 0;
+        const exactMatches = exactLearn + exactTeach;
+        const directionsMatched =
+          Number(youLearn.length > 0) + Number(youTeach.length > 0);
+
+        if (directionsMatched === 0) return null;
+        if (hasTargetSkills && directionsMatched !== 2) return null;
+
+        const score = mutualExact
+          ? 4
+          : mutualSkills
+            ? 3
+            : exactMatches > 0
+              ? 2
+              : 1;
+
+        return {
+          candidate,
+          youLearn,
+          youTeach,
+          score,
+          exactMatches,
+          directionsMatched,
+        };
+      })
+      .filter((match) => match !== null)
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          b.exactMatches - a.exactMatches ||
+          b.directionsMatched - a.directionsMatched,
+      );
+
+    const bestMatch = rankedCandidates[0];
+    if (!bestMatch) return null;
+
+    const matchesByUser = await Promise.all([
+      ctx.db
         .query("matches")
-        .filter(
-          (q) =>
-            q.or(
-              q.and(
-                q.eq(q.field("userA"), currentUser._id),
-                q.eq(q.field("userB"), u._id)
-              ),
-              q.and(
-                q.eq(q.field("userA"), u._id),
-                q.eq(q.field("userB"), currentUser._id)
-              )
-            )
-        )
-        .first();
+        .withIndex("by_userA", (q) => q.eq("userA", currentUser._id))
+        .collect(),
+      ctx.db
+        .query("matches")
+        .withIndex("by_userB", (q) => q.eq("userB", currentUser._id))
+        .collect(),
+    ]);
+    const existingMatch = [...matchesByUser[0], ...matchesByUser[1]].find(
+      (match) =>
+        (match.userA === currentUser._id &&
+          match.userB === bestMatch.candidate._id) ||
+        (match.userB === currentUser._id &&
+          match.userA === bestMatch.candidate._id),
+    );
+    const roomId = existingMatch?.roomId ?? crypto.randomUUID();
 
-      if (existingMatch) {
-        // Return opponent with existing roomId
-        return { ...u, roomId: existingMatch.roomId };
-      }
-    }
-
-    // 4️⃣ Strict match → both directions (skill AND level must match)
-    const strict = candidates.find((u) => {
-      const otherLearnLevels = u.learnLevels || [];
-      const otherTeachLevels = u.teachLevels || [];
-      // UserA wants to learn X at level Y, UserB can teach X at level Y
-      const teachMatch = learnLevels.some(({ skill, level }) =>
-        otherTeachLevels.some((ot) => ot.skill === skill && ot.level === level)
-      );
-      // UserA can teach X at level Y, UserB wants to learn X at level Y
-      const learnMatch = teachLevels.some(({ skill, level }) =>
-        otherLearnLevels.some((ol) => ol.skill === skill && ol.level === level)
-      );
-      return teachMatch && learnMatch;
-    });
-
-    if (strict) {
-      const roomId = crypto.randomUUID();
-
-      // ✅ Create new match
+    if (!existingMatch) {
       await ctx.db.insert("matches", {
         userA: currentUser._id,
-        userB: strict._id,
+        userB: bestMatch.candidate._id,
         roomId,
         createdAt: Date.now(),
       });
-
-      return { ...strict, roomId };
     }
 
-    // 5️⃣ Loose match → at least one direction (skill AND level must match)
-    const loose = candidates.find((u) => {
-      const otherLearnLevels = u.learnLevels || [];
-      const otherTeachLevels = u.teachLevels || [];
-      const teachMatch = learnLevels.some(({ skill, level }) =>
-        otherTeachLevels.some((ot) => ot.skill === skill && ot.level === level)
-      );
-      const learnMatch = teachLevels.some(({ skill, level }) =>
-        otherLearnLevels.some((ol) => ol.skill === skill && ol.level === level)
-      );
-      return teachMatch || learnMatch;
-    });
+    const matches = [...bestMatch.youLearn, ...bestMatch.youTeach];
+    const hasLevelFallback = matches.some((match) => !match.exactLevel);
 
-    if (loose) {
-      const roomId = crypto.randomUUID();
-
-      await ctx.db.insert("matches", {
-        userA: currentUser._id,
-        userB: loose._id,
-        roomId,
-        createdAt: Date.now(),
-      });
-
-      return { ...loose, roomId };
-    }
-
-    // 6️⃣ No match found
-    return null;
+    return {
+      ...bestMatch.candidate,
+      roomId,
+      matchQuality: hasLevelFallback ? "skill" as const : "exact" as const,
+      matchDetails: {
+        youLearn: bestMatch.youLearn,
+        youTeach: bestMatch.youTeach,
+        hasLevelFallback,
+      },
+    };
   },
 });

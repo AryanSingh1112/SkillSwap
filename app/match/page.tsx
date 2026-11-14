@@ -34,12 +34,24 @@ function CenterStatus({ status }: { status: "waiting" | "matched" }) {
   );
 }
 
+type SkillMatch = {
+  skill: string;
+  yourLevel: string | null;
+  theirLevel: string | null;
+  exactLevel: boolean;
+};
+
 type Opponent = {
   userName?: string;
   teach?: string[];
   learn?: string[];
   _id?: string;
   roomId?: string;
+  matchDetails?: {
+    youLearn: SkillMatch[];
+    youTeach: SkillMatch[];
+    hasLevelFallback: boolean;
+  };
 };
 
 export default function MatchPage() {
@@ -57,37 +69,59 @@ export default function MatchPage() {
   const [opponent, setOpponent] = useState<Opponent | null>(null);
   const [status, setStatus] = useState<"waiting" | "matched">("waiting");
   const [noMatch, setNoMatch] = useState(false);
+  const [matchError, setMatchError] = useState("");
 
-  // ⏳ Keep retrying until a match is found
   useEffect(() => {
     if (!email) return;
 
-    setStatus("waiting");
-    setNoMatch(false);
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout>;
 
-    let elapsed = 0;
-    const interval = setInterval(() => {
-      if (noMatch) {
-        clearInterval(interval);
-        return;
-      }
-      findMatch({ email }).then((result: Opponent | null) => {
-        if (result) {
+    const search = async () => {
+      setStatus("waiting");
+      setNoMatch(false);
+      setMatchError("");
+
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const learnSkill = searchParams.get("learn")?.trim() || undefined;
+        const teachSkill = searchParams.get("teach")?.trim() || undefined;
+        const targetSkills =
+          learnSkill && teachSkill ? { learnSkill, teachSkill } : {};
+
+        for (let attempt = 0; attempt < 3 && !cancelled; attempt += 1) {
+          const result = (await findMatch({
+            email,
+            ...targetSkills,
+          })) as Opponent | null;
+          if (cancelled) return;
+          if (result) {
           setOpponent(result);
           setStatus("matched");
-          clearInterval(interval); // ✅ stop searching when match found
-        }
-      });
-      elapsed += 4;
-      if (elapsed >= 12) {
-        // 12 seconds timeout
-        setNoMatch(true);
-        clearInterval(interval);
-      }
-    }, 4000); // check every 4 seconds
+          return;
+          }
 
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+          if (attempt < 2) {
+          await new Promise<void>((resolve) => {
+            timeout = setTimeout(resolve, 4000);
+          });
+          }
+        }
+        if (!cancelled) setNoMatch(true);
+      } catch {
+        if (!cancelled) {
+          setMatchError("We couldn’t search for matches. Please try again.");
+          setNoMatch(true);
+        }
+      }
+    };
+
+    void search();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [email, findMatch]);
 
   // ✅ only matched skills
@@ -96,19 +130,14 @@ export default function MatchPage() {
       return { selfTeach: [], selfLearn: [], oppTeach: [], oppLearn: [] };
     }
 
+    const youLearn = opponent.matchDetails?.youLearn ?? [];
+    const youTeach = opponent.matchDetails?.youTeach ?? [];
+
     return {
-      selfTeach: (selfData.teach ?? []).filter((s: string) =>
-        (opponent.learn ?? []).includes(s)
-      ),
-      selfLearn: (selfData.learn ?? []).filter((s: string) =>
-        (opponent.teach ?? []).includes(s)
-      ),
-      oppTeach: (opponent.teach ?? []).filter((s: string) =>
-        (selfData.learn ?? []).includes(s)
-      ),
-      oppLearn: (opponent.learn ?? []).filter((s: string) =>
-        (selfData.teach ?? []).includes(s)
-      ),
+      selfTeach: youTeach.map(({ skill }) => skill),
+      selfLearn: youLearn.map(({ skill }) => skill),
+      oppTeach: youLearn.map(({ skill }) => skill),
+      oppLearn: youTeach.map(({ skill }) => skill),
     };
   }, [selfData, opponent]);
 
@@ -163,7 +192,7 @@ export default function MatchPage() {
                 No match found
               </span>
               <span className="text-sm text-gray-400 mt-2">
-                Try updating your skills or levels to find a match.
+                {matchError || "Try updating your skills or levels to find a match."}
               </span>
             </div>
           )}
@@ -178,6 +207,36 @@ export default function MatchPage() {
             isWaiting={status === "waiting" && !noMatch}
           />
         </div>
+
+        {status === "matched" && opponent?.matchDetails && (
+          <div className="mt-8 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/5 p-5 text-center shadow-lg backdrop-blur">
+            {opponent.matchDetails.hasLevelFallback ? (
+              <p className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                We couldn’t find an exact level match for every shared skill, so
+                we matched by skill. You can still learn together at different
+                levels.
+              </p>
+            ) : (
+              <p className="mb-4 text-sm font-medium text-emerald-300">
+                Great match — your shared skills and levels align.
+              </p>
+            )}
+            <div className="grid gap-3 text-sm text-gray-200 sm:grid-cols-2">
+              {opponent.matchDetails.youLearn.map((match) => (
+                <p key={`learn-${match.skill}`} className="rounded-lg bg-black/30 px-3 py-2">
+                  Learn {match.skill}: you {match.yourLevel ?? "level not set"},
+                  partner {match.theirLevel ?? "level not set"}
+                </p>
+              ))}
+              {opponent.matchDetails.youTeach.map((match) => (
+                <p key={`teach-${match.skill}`} className="rounded-lg bg-black/30 px-3 py-2">
+                  Teach {match.skill}: you {match.yourLevel ?? "level not set"},
+                  partner {match.theirLevel ?? "level not set"}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
 
         {status === "matched" && (
           <button
