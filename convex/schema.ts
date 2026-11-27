@@ -12,6 +12,16 @@ export default defineSchema({
     teachLevels: v.optional(v.array(v.object({ skill: v.string(), level: v.string() }))),
   }).index("by_email", ["email"]),
 
+  // Inverted index: one row per (user, kind, normalised skill) so matching can
+  // look candidates up by skill instead of scanning every user.
+  userSkills: defineTable({
+    userId: v.id("users"),
+    kind: v.union(v.literal("learn"), v.literal("teach")),
+    key: v.string(),
+  })
+    .index("by_key_kind", ["key", "kind"])
+    .index("by_user", ["userId"]),
+
   matches: defineTable({
     userA: v.id("users"),  // first user
     userB: v.id("users"),  // second user

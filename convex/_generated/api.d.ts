@@ -9,6 +9,7 @@
  */
 
 import type * as match from "../match.js";
+import type * as skillIndex from "../skillIndex.js";
 import type * as skillForm from "../skillForm.js";
 import type * as user from "../user.js";
 
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   match: typeof match;
   skillForm: typeof skillForm;
+  skillIndex: typeof skillIndex;
   user: typeof user;
 }>;
 

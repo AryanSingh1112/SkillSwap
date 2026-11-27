@@ -1,13 +1,14 @@
 "use client"
 
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import React from 'react'
+import React, { useMemo } from 'react'
 
 import { ReactNode } from 'react';
 
 const Provider = ({ children }: { children: ReactNode }) => {
 
-    const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    // One client per mount; recreating it each render drops the websocket and subscriptions.
+    const convex = useMemo(() => new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!), []);
 
     return (
         <div>

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 type SkillLevel = { skill: string; level: string };
 type SkillMatch = {
@@ -89,9 +90,31 @@ export const findMatch = mutation({
       ? [selectedTeachSkill!]
       : currentUser.teach ?? [];
 
-    const candidates = await ctx.db
-      .query("users")
-      .collect();
+    // Look candidates up through the inverted skill index instead of scanning
+    // every user: people who teach what I learn, and who learn what I teach.
+    const idsFor = async (skills: string[], kind: "learn" | "teach") => {
+      const found = new Set<Id<"users">>();
+      const rows = await Promise.all(
+        [...new Set(skills.map(normalize))].map((key) =>
+          ctx.db
+            .query("userSkills")
+            .withIndex("by_key_kind", (q) => q.eq("key", key).eq("kind", kind))
+            .collect(),
+        ),
+      );
+      for (const group of rows) for (const row of group) found.add(row.userId);
+      return found;
+    };
+    const teachers = await idsFor(currentLearnSkills, "teach");
+    const learners = await idsFor(currentTeachSkills, "learn");
+    const candidateIds = hasTargetSkills
+      ? [...teachers].filter((id) => learners.has(id))
+      : [...new Set([...teachers, ...learners])];
+    const fetched = await Promise.all(candidateIds.map((id) => ctx.db.get(id)));
+    // Same tie-break as the old full scan: earliest-created user wins.
+    const candidates = fetched
+      .filter((user) => user !== null)
+      .sort((a, b) => a._creationTime - b._creationTime);
     const otherUsers = candidates.filter(
       (candidate) =>
         normalize(candidate.email) !== email &&

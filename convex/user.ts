@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { syncSkillIndex } from "./skillIndex";
 
 export const removeSkill = mutation({
   args: {
@@ -10,7 +11,7 @@ export const removeSkill = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (!user) {
@@ -38,6 +39,7 @@ export const removeSkill = mutation({
       learnLevels: updatedLearnLevels,
       teachLevels: updatedTeachLevels,
     });
+    await syncSkillIndex(ctx, user._id, updatedLearn, updatedTeach);
 
     const skillDocuments = await ctx.db
       .query("skills")
@@ -82,7 +84,7 @@ export const createUser = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (!user) {
@@ -93,6 +95,7 @@ export const createUser = mutation({
         learn: [], // initialize empty
         teach: [], // initialize empty
       });
+      // Empty skills => no index rows needed.
       return "Inserted User";
     }
     return "User already exists";
@@ -169,6 +172,7 @@ export const updateSkills = mutation({
     if (!savedUser) {
       throw new Error("The user profile could not be verified after saving.");
     }
+    await syncSkillIndex(ctx, userId, savedUser.learn ?? [], savedUser.teach ?? []);
     const levelsForSkills = (
       skills: string[],
       levels: { skill: string; level: string }[],
@@ -224,7 +228,7 @@ export const getUser = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
   },
 });
